@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目指标看板 · 集成测试</title>
+<style>
+:root[data-theme="dark"]{
+  --bg:#080b11; --glow1:rgba(77,159,255,.14); --glow2:rgba(147,97,255,.10);
+  --panel:rgba(255,255,255,.045); --panel-hi:rgba(255,255,255,.075);
+  --border:rgba(255,255,255,.09); --border-hi:rgba(255,255,255,.18);
+  --text:#e8eef7; --dim:#8b9bb0; --faint:#5a6a80;
+  --accent:#4d9fff; --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --info:#a78bfa;
+  --track:rgba(255,255,255,.08); --tipbg:rgba(16,22,32,.97);
+  --shadow:0 8px 32px rgba(0,0,0,.45);
+}
+:root[data-theme="light"]{
+  --bg:#eef1f7; --glow1:rgba(77,159,255,.16); --glow2:rgba(147,97,255,.10);
+  --panel:rgba(255,255,255,.78); --panel-hi:rgba(255,255,255,.95);
+  --border:rgba(15,23,42,.10); --border-hi:rgba(15,23,42,.22);
+  --text:#0f172a; --dim:#5b6b83; --faint:#94a3b8;
+  --accent:#1f6feb; --ok:#0f9d63; --warn:#c2790a; --bad:#d93a3a; --info:#7c4dff;
+  --track:rgba(15,23,42,.08); --tipbg:rgba(255,255,255,.99);
+  --shadow:0 8px 28px rgba(15,23,42,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg); color:var(--text); min-height:100vh;
+  font-size:13px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(900px 500px at 12% -8%,var(--glow1),transparent 62%),
+                   radial-gradient(800px 460px at 92% 4%,var(--glow2),transparent 60%);
+  background-attachment:fixed;
+  transition:background-color .25s ease,color .25s ease;
+}
+.wrap{max-width:1560px;margin:0 auto;padding:22px 26px 56px}
+
+/* ---------- 顶部 ---------- */
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:19px;font-weight:650;letter-spacing:-.2px}
+h1 .dot{color:var(--accent)}
+.sub{color:var(--dim);font-size:12px;margin-top:3px}
+.top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;
+  background:var(--panel);border:1px solid var(--border);font-size:11.5px;color:var(--dim);
+  backdrop-filter:blur(12px);white-space:nowrap;cursor:default;
+}
+.pill b{color:var(--text);font-weight:600}
+.pill.link{cursor:pointer;text-decoration:none}
+.pill.link:hover{border-color:var(--border-hi);color:var(--text)}
+.tbtn{
+  padding:5px 11px;border-radius:99px;background:var(--panel);border:1px solid var(--border);
+  color:var(--dim);font-size:11.5px;cursor:pointer;backdrop-filter:blur(12px);
+  font-family:inherit;transition:.15s;
+}
+.tbtn:hover{border-color:var(--border-hi);color:var(--text)}
+
+/* ---------- 状态灯条 ---------- */
+.strip{
+  display:flex;gap:0;border-radius:12px;overflow:hidden;border:1px solid var(--border);
+  background:var(--panel);backdrop-filter:blur(14px);margin-bottom:16px;box-shadow:var(--shadow);
+}
+.seg{
+  flex:1;padding:9px 15px;display:flex;align-items:center;gap:9px;font-size:12px;
+  border-right:1px solid var(--border);position:relative;cursor:default;
+}
+.seg:last-child{border-right:none}
+.seg:hover{background:var(--panel-hi)}
+.seg .k{color:var(--faint);font-size:11px}
+.seg .v{font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+.ok-c{color:var(--ok)} .warn-c{color:var(--warn)} .bad-c{color:var(--bad)} .info-c{color:var(--info)}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  backdrop-filter:blur(14px);box-shadow:var(--shadow);
+}
+.card-h{
+  padding:11px 16px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:600;
+  display:flex;align-items:center;gap:8px;
+}
+.card-h .hint{margin-left:auto;font-size:11px;color:var(--faint);font-weight:400}
+
+.grid-kpi{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+.kpi{padding:14px 16px;position:relative;overflow:hidden;cursor:default}
+.kpi:hover{border-color:var(--border-hi)}
+.kpi .lbl{font-size:11.5px;color:var(--dim);display:flex;align-items:center;gap:5px}
+.kpi .val{font-size:26px;font-weight:680;letter-spacing:-.6px;margin-top:6px;font-variant-numeric:tabular-nums}
+.kpi .unit{font-size:13px;font-weight:500;color:var(--dim);margin-left:2px}
+.kpi .foot{font-size:11px;color:var(--faint);margin-top:5px}
+.kpi::after{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);opacity:.85}
+.kpi.k-ok::after{background:var(--ok)} .kpi.k-warn::after{background:var(--warn)}
+.kpi.k-bad::after{background:var(--bad)} .kpi.k-info::after{background:var(--info)}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* ---------- 分布条 ---------- */
+.dist{padding:14px 16px;display:flex;flex-direction:column;gap:11px}
+.drow{display:flex;align-items:center;gap:11px;font-size:12px;cursor:default}
+.drow .nm{width:76px;color:var(--dim);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drow .track{flex:1;height:7px;border-radius:99px;background:var(--track);overflow:hidden;min-width:60px}
+.drow .fill{height:100%;border-radius:99px;background:var(--accent);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.drow .num{width:64px;text-align:right;font-variant-numeric:tabular-nums;color:var(--dim);flex-shrink:0}
+
+/* ---------- 表格 ---------- */
+.tblwrap{overflow:visible}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{
+  text-align:left;padding:9px 12px;color:var(--faint);font-weight:600;font-size:11px;
+  border-bottom:1px solid var(--border);white-space:nowrap;background:transparent;
+}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--panel-hi)}
+.cell{position:relative;cursor:help}
+.cell:hover{outline:1px dashed var(--border-hi);outline-offset:-1px;border-radius:3px}
+
+.tag{
+  display:inline-block;padding:1px 7px;border-radius:5px;font-size:10.5px;margin-right:3px;
+  background:var(--track);color:var(--dim);white-space:nowrap;
+}
+.st{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.st i{width:6px;height:6px;border-radius:50%;background:var(--dim);flex-shrink:0;font-style:normal}
+.st.s-done i{background:var(--ok)} .st.s-risk i{background:var(--bad)}
+.st.s-doing i{background:var(--accent)} .st.s-pause i{background:var(--faint)}
+.st.s-done{color:var(--ok)} .st.s-risk{color:var(--bad)}
+
+.bar{display:flex;align-items:center;gap:7px;justify-content:flex-end}
+.bar .t{width:44px;height:5px;border-radius:99px;background:var(--track);overflow:hidden;flex-shrink:0}
+.bar .f{height:100%;border-radius:99px;background:var(--accent)}
+.bar span{width:34px;text-align:right;font-variant-numeric:tabular-nums}
+
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;color:var(--dim)}
+
+/* ---------- 字段对照 ---------- */
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.fitem{padding:9px 13px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);cursor:help}
+.fitem:nth-child(3n){border-right:none}
+.fitem:hover{background:var(--panel-hi)}
+.fitem .fn{font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.fitem .ft{font-size:10px;color:var(--info);font-family:ui-monospace,monospace;padding:1px 5px;border-radius:4px;background:var(--track)}
+.fitem .fv{font-size:11.5px;color:var(--dim);margin-top:3px;word-break:break-all}
+.fitem .fw{font-size:10px;color:var(--warn);margin-left:auto}
+.badge-w{color:var(--warn)}
+
+/* ---------- 悬浮提示 ---------- */
+#tip{
+  position:fixed;z-index:999;max-width:460px;padding:10px 13px;border-radius:10px;
+  background:var(--tipbg);border:1px solid var(--border-hi);box-shadow:var(--shadow);
+  font-size:11.5px;line-height:1.6;pointer-events:none;opacity:0;transition:opacity .12s;
+  backdrop-filter:blur(18px);color:var(--text);
+}
+#tip.on{opacity:1}
+#tip .th{font-weight:650;margin-bottom:5px;display:flex;align-items:center;gap:7px;font-size:12px}
+#tip .tr{display:flex;gap:8px;margin-top:3px}
+#tip .tk{color:var(--faint);flex-shrink:0;min-width:52px}
+#tip .tv{color:var(--text);word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+#tip .tv.raw{color:var(--warn)}
+#tip .sep{height:1px;background:var(--border);margin:7px 0}
+#tip .note{color:var(--dim);font-size:11px;margin-top:5px;font-family:inherit}
+
+.foot{margin-top:20px;display:flex;gap:16px;flex-wrap:wrap;color:var(--faint);font-size:11px}
+.foot span{cursor:help}
+.foot span:hover{color:var(--dim)}
+.empty{padding:26px;text-align:center;color:var(--faint)}
+@media (max-width:1320px){.grid-kpi{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:900px){
+  .grid-kpi{grid-template-columns:repeat(2,1fr)}
+  .split{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr}
+  .fitem{border-right:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <div>
+      <h1 id="t-title">项目指标看板<span class="dot">.</span></h1>
+      <div class="sub" id="t-sub"></div>
+    </div>
+    <div class="top-right" id="t-topright"></div>
+  </div>
+
+  <div class="strip" id="t-strip"></div>
+
+  <div class="grid-kpi" id="t-kpi"></div>
+
+  <div class="split">
+    <div class="card">
+      <div class="card-h">状态分布 <span class="hint">悬停看口径</span></div>
+      <div class="dist" id="t-status"></div>
+    </div>
+    <div class="card">
+      <div class="card-h">部门分布 <span class="hint">含 lookup 拉取的在编人数</span></div>
+      <div class="dist" id="t-dept"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-h">项目明细 <span class="hint">悬停任意单元格 → 对照「接口原始值 / 解析后」</span></div>
+    <div class="tblwrap"><table id="t-table"></table></div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      字段解析对照
+      <span class="hint">同一个字段，接口给了什么 vs 页面拿到了什么</span>
+    </div>
+    <div class="fgrid" id="t-fields"></div>
+  </div>
+
+  <div class="foot" id="t-foot"></div>
+</div>
+
+<div id="tip"></div>
+
+<script>
+const VM = {"title":"项目指标看板","subtitle":"飞书多维表集成测试环境","source":{"baseToken":"","baseUrl":"","projectLabel":"项目指标","projectTableId":"","deptLabel":"部门","deptTableId":"","shape":"v3-col","masked":true},"fetchedAt":"2026-09-10T07:19:27.391Z","builtAt":"2026-09-10T07:19:29.779Z","meta":{"degraded":false,"degradeReason":"","offline":false,"buildMs":2388,"pages":1,"rowsPulled":{"project":8,"department":5}},"contract":{"project":{"total":17,"ok":["项目名称","状态","标签","进度","预算","工时","上线日期","超期","文档链接","所属部门","编号","部门编码","部门人数","成本预警","剩余天数","标签汇总","附件"],"missing":[],"rate":100},"department":{"total":4,"ok":["部门名称","部门编码","负责人","在编人数"],"missing":[],"rate":100},"types":{"项目名称":"text","标签汇总":"formula","成本预警":"formula","进度":"number","部门编码":"formula","附件":"attachment","超期":"checkbox","状态":"select","编号":"auto_number","剩余天数":"formula","部门人数":"lookup","标签":"select","文档链接":"text","上线日期":"datetime","工时":"number","所属部门":"link","预算":"number"},"deptTypes":{"部门名称":"text","部门编码":"text","负责人":"user","在编人数":"number"}},"kpi":{"total":8,"budget":3240000,"avgProgress":0.6062500000000001,"overdue":3,"risk":1,"done":2,"headcount":125,"deptCount":5},"statusDist":[{"name":"进行中","count":4,"pct":0.5},{"name":"已完成","count":2,"pct":0.25},{"name":"风险","count":1,"pct":0.125},{"name":"暂停","count":1,"pct":0.125}],"deptDist":[{"name":"产品研发部","code":"RD","size":42,"count":2,"budget":840000},{"name":"数据智能部","code":"DATA","size":18,"count":2,"budget":1470000},{"name":"市场运营部","code":"MKT","size":25,"count":2,"budget":222000},{"name":"客户成功部","code":"CS","size":31,"count":1,"budget":168000},{"name":"财务中心","code":"FIN","size":9,"count":1,"budget":540000}],"rows":[{"id":"PRJ-001","name":"协作平台重构","status":"进行中","tags":["前端","后端"],"progress":0.65,"budget":480000,"hours":1200,"due":"2026-10-15","dueDays":35,"overdue":false,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":35,"tagSummary":"前端 / 后端","files":[],"link":"https://example.com/docs/1","cells":{"项目名称":{"d":"协作平台重构","t":"text","e":0,"r":"协作平台重构"},"标签汇总":{"d":"前端 / 后端","t":"formula","e":0,"n":null,"r":"前端 / 后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.65","t":"number","e":0,"n":0.65,"r":"0.65"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-001","t":"auto_number","e":0,"n":null,"r":"PRJ-001"},"剩余天数":{"d":"35","t":"formula","e":0,"n":35,"r":"35"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 后端","t":"select","e":0,"list":["前端","后端"],"r":"[\"前端\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/1","t":"text","e":0,"href":"https://example.com/docs/1","r":"[https://example.com/docs/1](https://example.com/docs/1)"},"上线日期":{"d":"2026-10-15","t":"datetime","e":0,"days":35,"r":"2026-10-15T09:00:00.000+08:00"},"工时":{"d":"1200","t":"number","e":0,"n":1200,"r":"1200"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"480000","t":"number","e":0,"n":480000,"r":"480000"}}},{"id":"PRJ-002","name":"数据中台一期","status":"进行中","tags":["数据","后端"],"progress":0.42,"budget":1250000,"hours":3400,"due":"2026-11-30","dueDays":81,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"超预算","leftDays":81,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/2","cells":{"项目名称":{"d":"数据中台一期","t":"text","e":0,"r":"数据中台一期"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.42","t":"number","e":0,"n":0.42,"r":"0.42"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-002","t":"auto_number","e":0,"n":null,"r":"PRJ-002"},"剩余天数":{"d":"81","t":"formula","e":0,"n":81,"r":"81"},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/2","t":"text","e":0,"href":"https://example.com/docs/2","r":"[https://example.com/docs/2](https://example.com/docs/2)"},"上线日期":{"d":"2026-11-30","t":"datetime","e":0,"days":81,"r":"2026-11-30T09:00:00.000+08:00"},"工时":{"d":"3400","t":"number","e":0,"n":3400,"r":"3400"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"1250000","t":"number","e":0,"n":1250000,"r":"1250000"}}},{"id":"PRJ-003","name":"移动端改版","status":"风险","tags":["前端","紧急"],"progress":0.3,"budget":360000,"hours":860,"due":"2026-09-25","dueDays":15,"overdue":true,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":15,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/3","cells":{"项目名称":{"d":"移动端改版","t":"text","e":0,"r":"移动端改版"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.3","t":"number","e":0,"n":0.3,"r":"0.3"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"风险","t":"select","e":0,"list":["风险"],"r":"[\"风险\"]"},"编号":{"d":"PRJ-003","t":"auto_number","e":0,"n":null,"r":"PRJ-003"},"剩余天数":{"d":"15","t":"formula","e":0,"n":15,"r":"15"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/3","t":"text","e":0,"href":"https://example.com/docs/3","r":"[https://example.com/docs/3](https://example.com/docs/3)"},"上线日期":{"d":"2026-09-25","t":"datetime","e":0,"days":15,"r":"2026-09-25T09:00:00.000+08:00"},"工时":{"d":"860","t":"number","e":0,"n":860,"r":"860"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"360000","t":"number","e":0,"n":360000,"r":"360000"}}},{"id":"PRJ-004","name":"客户画像模型","status":"已完成","tags":["数据"],"progress":1,"budget":220000,"hours":640,"due":"2026-07-31","dueDays":-41,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"关注","leftDays":null,"tagSummary":"数据","files":[],"link":"https://example.com/docs/4","cells":{"项目名称":{"d":"客户画像模型","t":"text","e":0,"r":"客户画像模型"},"标签汇总":{"d":"数据","t":"formula","e":0,"n":null,"r":"数据"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-004","t":"auto_number","e":0,"n":null,"r":"PRJ-004"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据","t":"select","e":0,"list":["数据"],"r":"[\"数据\"]"},"文档链接":{"d":"https://example.com/docs/4","t":"text","e":0,"href":"https://example.com/docs/4","r":"[https://example.com/docs/4](https://example.com/docs/4)"},"上线日期":{"d":"2026-07-31","t":"datetime","e":0,"days":-41,"r":"2026-07-31T09:00:00.000+08:00"},"工时":{"d":"640","t":"number","e":0,"n":640,"r":"640"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"220000","t":"number","e":0,"n":220000,"r":"220000"}}},{"id":"PRJ-005","name":"官网 SEO 优化","status":"已完成","tags":["前端"],"progress":1,"budget":90000,"hours":300,"due":"2026-08-20","dueDays":-21,"overdue":false,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"正常","leftDays":null,"tagSummary":"前端","files":[],"link":"https://example.com/docs/5","cells":{"项目名称":{"d":"官网 SEO 优化","t":"text","e":0,"r":"官网 SEO 优化"},"标签汇总":{"d":"前端","t":"formula","e":0,"n":null,"r":"前端"},"成本预警":{"d":"正常","t":"formula","e":0,"n":null,"r":"正常"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-005","t":"auto_number","e":0,"n":null,"r":"PRJ-005"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端","t":"select","e":0,"list":["前端"],"r":"[\"前端\"]"},"文档链接":{"d":"https://example.com/docs/5","t":"text","e":0,"href":"https://example.com/docs/5","r":"[https://example.com/docs/5](https://example.com/docs/5)"},"上线日期":{"d":"2026-08-20","t":"datetime","e":0,"days":-21,"r":"2026-08-20T09:00:00.000+08:00"},"工时":{"d":"300","t":"number","e":0,"n":300,"r":"300"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"90000","t":"number","e":0,"n":90000,"r":"90000"}}},{"id":"PRJ-006","name":"工单系统升级","status":"进行中","tags":["后端"],"progress":0.78,"budget":168000,"hours":520,"due":"2026-10-08","dueDays":28,"overdue":false,"dept":"客户成功部","deptCode":"CS","deptSize":31,"warn":"关注","leftDays":28,"tagSummary":"后端","files":[],"link":"https://example.com/docs/6","cells":{"项目名称":{"d":"工单系统升级","t":"text","e":0,"r":"工单系统升级"},"标签汇总":{"d":"后端","t":"formula","e":0,"n":null,"r":"后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.78","t":"number","e":0,"n":0.78,"r":"0.78"},"部门编码":{"d":"CS","t":"formula","e":0,"n":null,"r":"CS"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-006","t":"auto_number","e":0,"n":null,"r":"PRJ-006"},"剩余天数":{"d":"28","t":"formula","e":0,"n":28,"r":"28"},"部门人数":{"d":"31","t":"lookup","e":0,"n":31,"r":"31"},"标签":{"d":"后端","t":"select","e":0,"list":["后端"],"r":"[\"后端\"]"},"文档链接":{"d":"https://example.com/docs/6","t":"text","e":0,"href":"https://example.com/docs/6","r":"[https://example.com/docs/6](https://example.com/docs/6)"},"上线日期":{"d":"2026-10-08","t":"datetime","e":0,"days":28,"r":"2026-10-08T09:00:00.000+08:00"},"工时":{"d":"520","t":"number","e":0,"n":520,"r":"520"},"所属部门":{"d":"客户成功部","t":"link","e":0,"list":["客户成功部"],"ids":["recvuNpakMh1YC"],"r":"[\"recvuNpakMh1YC\"]"},"预算":{"d":"168000","t":"number","e":0,"n":168000,"r":"168000"}}},{"id":"PRJ-007","name":"财务对账自动化","status":"暂停","tags":["数据","后端"],"progress":0.15,"budget":540000,"hours":1500,"due":"2026-12-20","dueDays":101,"overdue":true,"dept":"财务中心","deptCode":"FIN","deptSize":9,"warn":"超预算","leftDays":101,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/7","cells":{"项目名称":{"d":"财务对账自动化","t":"text","e":0,"r":"财务对账自动化"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.15","t":"number","e":0,"n":0.15,"r":"0.15"},"部门编码":{"d":"FIN","t":"formula","e":0,"n":null,"r":"FIN"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"暂停","t":"select","e":0,"list":["暂停"],"r":"[\"暂停\"]"},"编号":{"d":"PRJ-007","t":"auto_number","e":0,"n":null,"r":"PRJ-007"},"剩余天数":{"d":"101","t":"formula","e":0,"n":101,"r":"101"},"部门人数":{"d":"9","t":"lookup","e":0,"n":9,"r":"9"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/7","t":"text","e":0,"href":"https://example.com/docs/7","r":"[https://example.com/docs/7](https://example.com/docs/7)"},"上线日期":{"d":"2026-12-20","t":"datetime","e":0,"days":101,"r":"2026-12-20T09:00:00.000+08:00"},"工时":{"d":"1500","t":"number","e":0,"n":1500,"r":"1500"},"所属部门":{"d":"财务中心","t":"link","e":0,"list":["财务中心"],"ids":["recvuNpakM0VUN"],"r":"[\"recvuNpakM0VUN\"]"},"预算":{"d":"540000","t":"number","e":0,"n":540000,"r":"540000"}}},{"id":"PRJ-008","name":"增长活动平台","status":"进行中","tags":["前端","紧急"],"progress":0.55,"budget":132000,"hours":410,"due":"2026-09-18","dueDays":8,"overdue":true,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"关注","leftDays":8,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/8","cells":{"项目名称":{"d":"增长活动平台","t":"text","e":0,"r":"增长活动平台"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.55","t":"number","e":0,"n":0.55,"r":"0.55"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-008","t":"auto_number","e":0,"n":null,"r":"PRJ-008"},"剩余天数":{"d":"8","t":"formula","e":0,"n":8,"r":"8"},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/8","t":"text","e":0,"href":"https://example.com/docs/8","r":"[https://example.com/docs/8](https://example.com/docs/8)"},"上线日期":{"d":"2026-09-18","t":"datetime","e":0,"days":8,"r":"2026-09-18T09:00:00.000+08:00"},"工时":{"d":"410","t":"number","e":0,"n":410,"r":"410"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"132000","t":"number","e":0,"n":132000,"r":"132000"}}}],"thresholds":{"overdue":0,"risk":0,"contractRate":100},"freshness":{"freshMinutes":30,"warnMinutes":120,"staleMinutes":360}};
+const $ = (s) => document.querySelector(s);
+const tip = $('#tip');
+
+/* ---------------- 工具 ---------------- */
+const fmtMoney = (n) => n >= 10000 ? '¥' + (n / 10000).toFixed(1) + '万' : '¥' + n.toLocaleString('zh-CN');
+const fmtInt = (n) => Number(n || 0).toLocaleString('zh-CN');
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* 数据新鲜度：绝不把旧数据说成新的 */
+function freshness() {
+  const mins = (Date.now() - new Date(VM.fetchedAt).getTime()) / 60000;
+  const f = VM.freshness;
+  let icon = '✅', cls = 'ok-c', label = '数据新鲜';
+  if (VM.meta.degraded) { icon = '⚠️'; cls = 'warn-c'; label = '降级快照'; }
+  else if (mins >= f.staleMinutes) { icon = '❌'; cls = 'bad-c'; label = '数据已过期'; }
+  else if (mins >= f.warnMinutes) { icon = '🕓'; cls = 'warn-c'; label = '数据偏旧'; }
+  else if (mins >= f.freshMinutes) { icon = '⏱'; cls = 'warn-c'; label = '待更新'; }
+  return { icon, cls, label, mins };
+}
+function ago(iso) {
+  const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (mins < 1) return '刚刚';
+  if (mins < 60) return mins + ' 分钟前';
+  const h = Math.floor(mins / 60);
+  if (h < 24) return h + ' 小时前';
+  return Math.floor(h / 24) + ' 天前';
+}
+
+/* ---------------- 提示框 ---------------- */
+function showTip(html, ev) {
+  tip.innerHTML = html;
+  tip.classList.add('on');
+  moveTip(ev);
+}
+function moveTip(ev) {
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 10) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 10) y = ev.clientY - h - pad;
+  tip.style.left = Math.max(8, x) + 'px';
+  tip.style.top = Math.max(8, y) + 'px';
+}
+function hideTip() { tip.classList.remove('on'); }
+document.addEventListener('mousemove', (e) => { if (tip.classList.contains('on')) moveTip(e); });
+document.addEventListener('scroll', hideTip, true);
+
+function tipHTML(field, type, raw, parsed, note, extra) {
+  let h = '<div class="th">' + esc(field) + '<span class="mono" style="color:var(--info)">' + esc(type) + '</span></div>';
+  h += '<div class="tr"><span class="tk">接口原始</span><span class="tv raw">' + esc(raw) + '</span></div>';
+  h += '<div class="tr"><span class="tk">页面解析</span><span class="tv">' + esc(parsed) + '</span></div>';
+  if (extra) h += '<div class="sep"></div>' + extra;
+  if (note) h += '<div class="note">' + note + '</div>';
+  return h;
+}
+
+/* ---------------- 头部 ---------------- */
+function renderTop() {
+  document.title = VM.title + ' · 集成测试';
+  $('#t-title').innerHTML = esc(VM.title) + '<span class="dot">.</span>';
+  $('#t-sub').textContent = VM.subtitle + ' · ' + VM.source.projectLabel + ' + ' + VM.source.deptLabel + ' 两张表';
+  const f = freshness();
+  $('#t-topright').innerHTML =
+    (VM.source.baseUrl
+      ? '<a class="pill link" href="' + esc(VM.source.baseUrl) + '" target="_blank" title="打开飞书多维表">📊 数据源</a>'
+      : '<span class="pill" title="公开版本已移除数据源地址与表标识（脱敏）">📊 数据源已隐藏</span>') +
+    '<span class="pill" title="页面构建时间：' + esc(VM.builtAt) + '">🔨 构建 ' + esc(ago(VM.builtAt)) + '</span>' +
+    '<span class="pill ' + f.cls + '" id="freshpill">' + f.icon + ' <b>' + f.label + '</b> · ' + esc(ago(VM.fetchedAt)) + '</span>' +
+    '<button class="tbtn" id="tbtn">🌗 主题</button>';
+  $('#tbtn').onclick = () => {
+    const cur = document.documentElement.getAttribute('data-theme');
+    document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+  };
+  const fp = $('#freshpill');
+  fp.onmouseenter = (e) => showTip(
+    '<div class="th">数据新鲜度</div>' +
+    '<div class="tr"><span class="tk">拉取时间</span><span class="tv">' + esc(VM.fetchedAt) + '</span></div>' +
+    '<div class="tr"><span class="tk">距今</span><span class="tv">' + Math.round(f.mins) + ' 分钟</span></div>' +
+    '<div class="tr"><span class="tk">阈值</span><span class="tv">新鲜&lt;' + VM.freshness.freshMinutes + ' / 偏旧&gt;' + VM.freshness.warnMinutes + ' / 过期&gt;' + VM.freshness.staleMinutes + ' 分钟</span></div>' +
+    (VM.meta.degraded ? '<div class="sep"></div><div class="tr"><span class="tk">降级原因</span><span class="tv raw">' + esc(VM.meta.degradeReason) + '</span></div>' +
+      '<div class="note">拉取失败时页面使用上一次成功的快照，并明确标记 —— 不会显示成「刷新成功」。</div>' : ''),
+    e);
+  fp.onmouseleave = hideTip;
+}
+
+/* ---------------- 状态灯条 ---------------- */
+function renderStrip() {
+  const p = VM.contract.project, d = VM.contract.department;
+  const rate = Math.round((p.ok.length + d.ok.length) / (p.total + d.total) * 100);
+  const miss = [...p.missing, ...d.missing];
+  const rateCls = rate === 100 ? 'ok-c' : rate >= 80 ? 'warn-c' : 'bad-c';
+
+  const segs = [
+    ['数据形态', VM.source.shape === 'v3-col' ? 'v3 列式' : 'v1 行式', 'info-c',
+      '<div class="note">base v3 返回「列式」结构：data[][] 二维数组 + fields[] 列名 + field_type_list[] 类型。<br>bitable v1 返回「行式」结构：items[].fields{}。<br>两者解析方式完全不同，适配层已同时兼容。</div>'],
+    ['契约字段', (p.ok.length + d.ok.length) + ' / ' + (p.total + d.total), miss.length ? 'warn-c' : 'ok-c',
+      miss.length ? '<div class="note">缺失字段：' + esc(miss.join('、')) + '<br>缺失的槽位会渲染为「—」并在此处报警，不会静默变成空白。</div>'
+                  : '<div class="note">契约中定义的所有字段都能在返回结果里找到，页面不会出现静默空白。</div>'],
+    ['契约到位率', rate + '%', rateCls, '<div class="note">' + rate + '% 的期望字段已到位。</div>'],
+    ['分页拉取', VM.meta.pages + ' 页 / ' + VM.meta.rowsPulled.project + ' 条', 'ok-c',
+      '<div class="note">base v3 单页上限 200 条，超过必须用 offset 翻页。<br>本次共翻 ' + VM.meta.pages + ' 页，拿到 ' + VM.meta.rowsPulled.project + ' 条项目记录。</div>'],
+    ['构建耗时', VM.meta.buildMs + 'ms', 'ok-c', null],
+  ];
+
+  $('#t-strip').innerHTML = segs.map((s, i) =>
+    '<div class="seg" data-i="' + i + '"><span class="k">' + esc(s[0]) + '</span>' +
+    '<span class="v ' + s[2] + '">' + esc(s[1]) + '</span></div>').join('');
+
+  document.querySelectorAll('.seg').forEach((el) => {
+    const note = segs[+el.dataset.i][3];
+    if (!note) return;
+    el.onmouseenter = (e) => showTip('<div class="th">' + esc(segs[+el.dataset.i][0]) + '</div>' + note, e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- KPI ---------------- */
+function renderKPI() {
+  const k = VM.kpi, t = VM.thresholds;
+  const cards = [
+    { lbl: '项目总数', val: k.total, unit: '个', foot: '已完成 ' + k.done + ' 个', cls: '',
+      tip: '<div class="th">项目总数</div><div class="tr"><span class="tk">口径</span><span class="tv">' + VM.source.projectLabel + ' 表全部记录数</span></div><div class="tr"><span class="tk">来源</span><span class="tv">' + VM.meta.rowsPulled.project + ' 行 × 翻 ' + VM.meta.pages + ' 页</span></div>' },
+    { lbl: '预算合计', val: fmtMoney(k.budget), unit: '', foot: '均值 ' + fmtMoney(k.total ? k.budget / k.total : 0) + ' / 项目', cls: '',
+      tip: '<div class="th">预算合计</div><div class="tr"><span class="tk">口径</span><span class="tv">SUM(预算)</span></div><div class="tr"><span class="tk">精度</span><span class="tv">字段为货币型，CNY，2 位小数</span></div>' },
+    { lbl: '平均进度', val: (k.avgProgress * 100).toFixed(1), unit: '%', foot: '0~100% 区间', cls: 'k-info',
+      tip: '<div class="th">平均进度</div><div class="tr"><span class="tk">口径</span><span class="tv">AVERAGE(进度)</span></div><div class="note">进度字段是 number(progress) 类型，接口返回 0~1 的小数，页面 ×100 展示。</div>' },
+    { lbl: '超期项目', val: k.overdue, unit: '个', foot: k.overdue ? '需关注' : '全部正常', cls: k.overdue > t.overdue ? 'k-bad' : 'k-ok',
+      tip: '<div class="th">超期项目</div><div class="tr"><span class="tk">口径</span><span class="tv">COUNT(超期 = true)</span></div><div class="note">复选框字段：接口返回 true/false，页面渲染为 ✅/⬜。</div>' },
+    { lbl: '风险项目', val: k.risk, unit: '个', foot: '状态 = 风险', cls: k.risk > t.risk ? 'k-bad' : 'k-ok',
+      tip: '<div class="th">风险项目</div><div class="tr"><span class="tk">口径</span><span class="tv">COUNT(状态 = "风险")</span></div>' },
+    { lbl: '覆盖部门', val: k.deptCount, unit: '个', foot: '在编合计 ' + k.headcount + ' 人', cls: 'k-info',
+      tip: '<div class="th">覆盖部门</div><div class="tr"><span class="tk">口径</span><span class="tv">按「所属部门」关联字段去重计数</span></div><div class="note">在编合计来自「部门」表的 lookup 字段，验证跨表拉取链路。</div>' },
+  ];
+
+  $('#t-kpi').innerHTML = cards.map((c, i) =>
+    '<div class="card kpi ' + c.cls + '" data-i="' + i + '">' +
+      '<div class="lbl">' + esc(c.lbl) + '</div>' +
+      '<div class="val">' + esc(c.val) + (c.unit ? '<span class="unit">' + esc(c.unit) + '</span>' : '') + '</div>' +
+      '<div class="foot">' + esc(c.foot) + '</div>' +
+    '</div>').join('');
+
+  document.querySelectorAll('.kpi').forEach((el) => {
+    el.onmouseenter = (e) => showTip(cards[+el.dataset.i].tip, e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- 分布 ---------------- */
+function renderDist() {
+  const stColor = { '已完成': 'var(--ok)', '进行中': 'var(--accent)', '风险': 'var(--bad)', '暂停': 'var(--faint)' };
+  const maxS = Math.max(1, ...VM.statusDist.map((x) => x.count));
+  $('#t-status').innerHTML = VM.statusDist.map((x) =>
+    '<div class="drow" data-n="' + esc(x.name) + '" data-c="' + x.count + '" data-p="' + (x.pct * 100).toFixed(1) + '">' +
+      '<span class="nm">' + esc(x.name) + '</span>' +
+      '<span class="track"><span class="fill" style="width:' + (x.count / maxS * 100) + '%;background:' + (stColor[x.name] || 'var(--accent)') + '"></span></span>' +
+      '<span class="num">' + x.count + ' 个 · ' + (x.pct * 100).toFixed(0) + '%</span>' +
+    '</div>').join('');
+
+  const maxD = Math.max(1, ...VM.deptDist.map((x) => x.count));
+  $('#t-dept').innerHTML = VM.deptDist.map((x) =>
+    '<div class="drow" data-n="' + esc(x.name) + '" data-c="' + x.count + '" data-b="' + x.budget + '" data-s="' + (x.size || 0) + '" data-code="' + esc(x.code || '') + '">' +
+      '<span class="nm">' + esc(x.name) + '</span>' +
+      '<span class="track"><span class="fill" style="width:' + (x.count / maxD * 100) + '%;background:var(--info)"></span></span>' +
+      '<span class="num">' + x.count + ' 个 · ' + fmtMoney(x.budget) + '</span>' +
+    '</div>').join('');
+
+  document.querySelectorAll('#t-status .drow').forEach((el) => {
+    el.onmouseenter = (e) => showTip(
+      '<div class="th">状态分布 · ' + esc(el.dataset.n) + '</div>' +
+      '<div class="tr"><span class="tk">项目数</span><span class="tv">' + el.dataset.c + ' 个</span></div>' +
+      '<div class="tr"><span class="tk">占比</span><span class="tv">' + el.dataset.p + '%</span></div>' +
+      '<div class="note">状态字段为单选 select，接口返回选项名数组。</div>', e);
+    el.onmouseleave = hideTip;
+  });
+  document.querySelectorAll('#t-dept .drow').forEach((el) => {
+    el.onmouseenter = (e) => showTip(
+      '<div class="th">部门 · ' + esc(el.dataset.n) + '</div>' +
+      '<div class="tr"><span class="tk">部门编码</span><span class="tv">' + esc(el.dataset.code) + '</span></div>' +
+      '<div class="tr"><span class="tk">在编人数</span><span class="tv">' + el.dataset.s + ' 人</span></div>' +
+      '<div class="tr"><span class="tk">项目数</span><span class="tv">' + el.dataset.c + ' 个</span></div>' +
+      '<div class="tr"><span class="tk">预算合计</span><span class="tv">' + fmtMoney(+el.dataset.b) + '</span></div>' +
+      '<div class="note">编码与人数来自「部门」表，通过关联字段与 lookup 跨表取得。</div>', e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- 明细表 ---------------- */
+const stCls = { '已完成': 's-done', '风险': 's-risk', '进行中': 's-doing', '暂停': 's-pause' };
+function renderTable() {
+  const cols = ['编号', '项目名称', '状态', '标签', '进度', '预算', '上线日期', '超期', '所属部门', '部门人数', '成本预警'];
+  const head = '<thead><tr>' + cols.map((c) => {
+    const num = ['进度', '预算', '部门人数'].includes(c);
+    return '<th class="' + (num ? 'num' : '') + '">' + esc(c) + '</th>';
+  }).join('') + '</tr></thead>';
+
+  const rows = VM.rows.map((r, ri) => {
+    const td = (name, content, cls) => {
+      const cell = r.cells[name];
+      const t = VM.contract.types[name] || 'text';
+      const raw = cell ? cell.r : '（字段缺失）';
+      const parsed = cell ? cell.d : '—';
+      const note = cell && cell.w ? '该字段被 { type, value } 包装过，适配层已按内层类型解出真实值。' : '';
+      return '<td class="cell ' + (cls || '') + '" data-ri="' + ri + '" data-f="' + esc(name) + '" data-t="' + esc(t) + '" data-raw="' + esc(raw) + '" data-p="' + esc(parsed) + '" data-note="' + esc(note) + '">' + content + '</td>';
+    };
+    return '<tr>' +
+      td('编号', '<span class="mono">' + esc(r.id || '—') + '</span>') +
+      td('项目名称', '<b>' + esc(r.name) + '</b>') +
+      td('状态', '<span class="st ' + (stCls[r.status] || '') + '"><i></i>' + esc(r.status) + '</span>') +
+      td('标签', (r.tags.length ? r.tags.map((t) => '<span class="tag">' + esc(t) + '</span>').join('') : '—')) +
+      td('进度', '<span class="bar"><span class="t"><span class="f" style="width:' + (r.progress * 100) + '%"></span></span><span>' + (r.progress * 100).toFixed(0) + '%</span></span>', 'num') +
+      td('预算', fmtMoney(r.budget), 'num') +
+      td('上线日期', esc(r.due) + (r.dueDays != null ? ' <span class="mono">(' + (r.dueDays >= 0 ? '+' : '') + r.dueDays + 'd)</span>' : '')) +
+      td('超期', r.overdue ? '✅' : '⬜') +
+      td('所属部门', esc(r.dept)) +
+      td('部门人数', esc(r.deptSize || '—'), 'num') +
+      td('成本预警', '<span class="' + (r.warn === '超预算' ? 'bad-c' : r.warn === '关注' ? 'warn-c' : 'ok-c') + '">' + esc(r.warn) + '</span>') +
+    '</tr>';
+  }).join('');
+
+  $('#t-table').innerHTML = head + '<tbody>' + rows + '</tbody>';
+
+  document.querySelectorAll('#t-table .cell').forEach((el) => {
+    el.onmouseenter = (e) => showTip(
+      tipHTML(el.dataset.f, el.dataset.t, el.dataset.raw, el.dataset.p, el.dataset.note), e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- 字段解析对照 ---------------- */
+function renderFields() {
+  const sample = VM.rows[0];
+  if (!sample) { $('#t-fields').innerHTML = '<div class="empty">没有数据</div>'; return; }
+  const order = ['项目名称', '状态', '标签', '进度', '预算', '工时', '上线日期', '超期', '文档链接', '所属部门', '编号', '部门编码', '部门人数', '成本预警', '剩余天数', '标签汇总', '附件'];
+  const items = order.map((name) => {
+    const c = sample.cells[name];
+    if (!c) return '<div class="fitem"><div class="fn">' + esc(name) + '<span class="ft">缺失</span></div><div class="fv">—</div></div>';
+    const raw = c.r || 'null';
+    return '<div class="fitem" data-f="' + esc(name) + '" data-t="' + esc(c.t) + '" data-raw="' + esc(raw) + '" data-p="' + esc(c.d) + '" data-w="' + (c.w || 0) + '">' +
+      '<div class="fn">' + esc(name) + '<span class="ft">' + esc(c.t) + '</span>' + (c.w ? '<span class="fw">包装值</span>' : '') + '</div>' +
+      '<div class="fv">' + esc(c.d || '（空）') + '</div>' +
+    '</div>';
+  }).join('');
+  $('#t-fields').innerHTML = items;
+
+  document.querySelectorAll('.fitem').forEach((el) => {
+    el.onmouseenter = (e) => showTip(
+      tipHTML(el.dataset.f, el.dataset.t, el.dataset.raw, el.dataset.p,
+        el.dataset.w === '1' ? '接口把该值包成了 { type, value } 对象。若解析时不认识这层包装，这一列会整列空白且不报错。' : ''),
+      e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- 页脚 ---------------- */
+function renderFoot() {
+  const ft = [
+    ['🔗 链路 A：构建时拉取', '定时任务 → 拉取多维表 → 生成静态页面。分钟级延迟，零成本，无凭证泄露风险。'],
+    ['🔒 凭证策略', '本次测试走 lark-cli 用户身份，本地不存任何 App Secret。正式上线改为自建应用 + CI Secret，密钥不进代码库。'],
+    ['📐 解析适配层', 'field-adapter.js 同时兼容 base v3 列式与 bitable v1 行式返回，以及公式/查找引用的 { type, value } 包装。'],
+    ['🧪 单测', 'test/field-adapter.test.js —— 53 项断言覆盖 17 类字段 & 两种返回形态，可用 node 直接运行。'],
+    ['⚙️ 重建页面', 'node fetch-and-build.js    离线改样式：node fetch-and-build.js --offline'],
+  ];
+  $('#t-foot').innerHTML = ft.map((f, i) => '<span data-i="' + i + '">' + esc(f[0]) + '</span>').join('');
+  document.querySelectorAll('#t-foot span').forEach((el) => {
+    el.onmouseenter = (e) => showTip('<div class="th">' + esc(ft[+el.dataset.i][0]) + '</div><div class="note">' + esc(ft[+el.dataset.i][1]) + '</div>', e);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---------------- 启动 ---------------- */
+if (!VM) {
+  document.body.innerHTML = '<div class="wrap"><div class="card"><div class="empty">数据未注入：请用 fetch-and-build.js 生成页面，而不是直接打开模板。</div></div></div>';
+} else {
+  renderTop(); renderStrip(); renderKPI(); renderDist(); renderTable(); renderFields(); renderFoot();
+}
+</script>
+</body>
+</html>
