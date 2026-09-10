@@ -172,6 +172,28 @@ tbody tr:hover{background:var(--panel-hi)}
   .fgrid{grid-template-columns:1fr}
   .fitem{border-right:none}
 }
+
+/* ---------------- 写回（可编辑单元格 / 结果提示） ---------------- */
+/* 查看 → 悬停；编辑 → 双击。两者不冲突，保持「不点击就能看全」的手感。 */
+.cell.editable{cursor:cell;position:relative}
+.cell.editable:hover{background:var(--panel-hi);box-shadow:inset 0 0 0 1px var(--border)}
+.cell.editable::after{content:'✎';position:absolute;top:2px;right:4px;font-size:9px;color:var(--faint);opacity:0;transition:.15s}
+.cell.editable:hover::after{opacity:.85}
+.cell.saving{opacity:.5;pointer-events:none}
+.cell.saved{animation:flashOk 1s ease}
+.cell.failed{animation:flashBad 1s ease}
+@keyframes flashOk{0%{background:rgba(46,160,67,.30)}100%{background:transparent}}
+@keyframes flashBad{0%{background:rgba(215,58,73,.30)}100%{background:transparent}}
+.cell select,.cell input{font:inherit;font-size:12px;width:100%;padding:2px 5px;border-radius:5px;
+  border:1px solid var(--border);background:var(--panel);color:var(--text);outline:none}
+.cell input{text-align:right}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;pointer-events:none;
+  padding:9px 16px;border-radius:10px;font-size:12.5px;font-weight:600;z-index:99;
+  background:var(--panel);color:var(--text);border:1px solid var(--border);
+  box-shadow:0 8px 28px rgba(0,0,0,.3);transition:.22s;max-width:80vw}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.ok{border-color:rgba(46,160,67,.65)}
+#toast.bad{border-color:rgba(215,58,73,.7)}
 </style>
 </head>
 <body>
@@ -201,7 +223,7 @@ tbody tr:hover{background:var(--panel-hi)}
   </div>
 
   <div class="card" style="margin-bottom:16px">
-    <div class="card-h">项目明细 <span class="hint">悬停任意单元格 → 对照「接口原始值 / 解析后」</span></div>
+    <div class="card-h">项目明细 <span class="hint">悬停单元格 → 对照「接口原始值 / 解析后」 · 双击「状态 / 进度 / 超期」→ 写回多维表</span></div>
     <div class="tblwrap"><table id="t-table"></table></div>
   </div>
 
@@ -219,7 +241,7 @@ tbody tr:hover{background:var(--panel-hi)}
 <div id="tip"></div>
 
 <script>
-const VM = {"title":"项目指标看板","subtitle":"飞书多维表集成测试环境","source":{"baseToken":"","baseUrl":"","projectLabel":"项目指标","projectTableId":"","deptLabel":"部门","deptTableId":"","shape":"v3-col","masked":true},"fetchedAt":"2026-09-10T07:19:27.391Z","builtAt":"2026-09-10T07:19:29.779Z","meta":{"degraded":false,"degradeReason":"","offline":false,"buildMs":2388,"pages":1,"rowsPulled":{"project":8,"department":5}},"contract":{"project":{"total":17,"ok":["项目名称","状态","标签","进度","预算","工时","上线日期","超期","文档链接","所属部门","编号","部门编码","部门人数","成本预警","剩余天数","标签汇总","附件"],"missing":[],"rate":100},"department":{"total":4,"ok":["部门名称","部门编码","负责人","在编人数"],"missing":[],"rate":100},"types":{"项目名称":"text","标签汇总":"formula","成本预警":"formula","进度":"number","部门编码":"formula","附件":"attachment","超期":"checkbox","状态":"select","编号":"auto_number","剩余天数":"formula","部门人数":"lookup","标签":"select","文档链接":"text","上线日期":"datetime","工时":"number","所属部门":"link","预算":"number"},"deptTypes":{"部门名称":"text","部门编码":"text","负责人":"user","在编人数":"number"}},"kpi":{"total":8,"budget":3240000,"avgProgress":0.6062500000000001,"overdue":3,"risk":1,"done":2,"headcount":125,"deptCount":5},"statusDist":[{"name":"进行中","count":4,"pct":0.5},{"name":"已完成","count":2,"pct":0.25},{"name":"风险","count":1,"pct":0.125},{"name":"暂停","count":1,"pct":0.125}],"deptDist":[{"name":"产品研发部","code":"RD","size":42,"count":2,"budget":840000},{"name":"数据智能部","code":"DATA","size":18,"count":2,"budget":1470000},{"name":"市场运营部","code":"MKT","size":25,"count":2,"budget":222000},{"name":"客户成功部","code":"CS","size":31,"count":1,"budget":168000},{"name":"财务中心","code":"FIN","size":9,"count":1,"budget":540000}],"rows":[{"id":"PRJ-001","name":"协作平台重构","status":"进行中","tags":["前端","后端"],"progress":0.65,"budget":480000,"hours":1200,"due":"2026-10-15","dueDays":35,"overdue":false,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":35,"tagSummary":"前端 / 后端","files":[],"link":"https://example.com/docs/1","cells":{"项目名称":{"d":"协作平台重构","t":"text","e":0,"r":"协作平台重构"},"标签汇总":{"d":"前端 / 后端","t":"formula","e":0,"n":null,"r":"前端 / 后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.65","t":"number","e":0,"n":0.65,"r":"0.65"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-001","t":"auto_number","e":0,"n":null,"r":"PRJ-001"},"剩余天数":{"d":"35","t":"formula","e":0,"n":35,"r":"35"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 后端","t":"select","e":0,"list":["前端","后端"],"r":"[\"前端\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/1","t":"text","e":0,"href":"https://example.com/docs/1","r":"[https://example.com/docs/1](https://example.com/docs/1)"},"上线日期":{"d":"2026-10-15","t":"datetime","e":0,"days":35,"r":"2026-10-15T09:00:00.000+08:00"},"工时":{"d":"1200","t":"number","e":0,"n":1200,"r":"1200"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"480000","t":"number","e":0,"n":480000,"r":"480000"}}},{"id":"PRJ-002","name":"数据中台一期","status":"进行中","tags":["数据","后端"],"progress":0.42,"budget":1250000,"hours":3400,"due":"2026-11-30","dueDays":81,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"超预算","leftDays":81,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/2","cells":{"项目名称":{"d":"数据中台一期","t":"text","e":0,"r":"数据中台一期"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.42","t":"number","e":0,"n":0.42,"r":"0.42"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-002","t":"auto_number","e":0,"n":null,"r":"PRJ-002"},"剩余天数":{"d":"81","t":"formula","e":0,"n":81,"r":"81"},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/2","t":"text","e":0,"href":"https://example.com/docs/2","r":"[https://example.com/docs/2](https://example.com/docs/2)"},"上线日期":{"d":"2026-11-30","t":"datetime","e":0,"days":81,"r":"2026-11-30T09:00:00.000+08:00"},"工时":{"d":"3400","t":"number","e":0,"n":3400,"r":"3400"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"1250000","t":"number","e":0,"n":1250000,"r":"1250000"}}},{"id":"PRJ-003","name":"移动端改版","status":"风险","tags":["前端","紧急"],"progress":0.3,"budget":360000,"hours":860,"due":"2026-09-25","dueDays":15,"overdue":true,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":15,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/3","cells":{"项目名称":{"d":"移动端改版","t":"text","e":0,"r":"移动端改版"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.3","t":"number","e":0,"n":0.3,"r":"0.3"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"风险","t":"select","e":0,"list":["风险"],"r":"[\"风险\"]"},"编号":{"d":"PRJ-003","t":"auto_number","e":0,"n":null,"r":"PRJ-003"},"剩余天数":{"d":"15","t":"formula","e":0,"n":15,"r":"15"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/3","t":"text","e":0,"href":"https://example.com/docs/3","r":"[https://example.com/docs/3](https://example.com/docs/3)"},"上线日期":{"d":"2026-09-25","t":"datetime","e":0,"days":15,"r":"2026-09-25T09:00:00.000+08:00"},"工时":{"d":"860","t":"number","e":0,"n":860,"r":"860"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"360000","t":"number","e":0,"n":360000,"r":"360000"}}},{"id":"PRJ-004","name":"客户画像模型","status":"已完成","tags":["数据"],"progress":1,"budget":220000,"hours":640,"due":"2026-07-31","dueDays":-41,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"关注","leftDays":null,"tagSummary":"数据","files":[],"link":"https://example.com/docs/4","cells":{"项目名称":{"d":"客户画像模型","t":"text","e":0,"r":"客户画像模型"},"标签汇总":{"d":"数据","t":"formula","e":0,"n":null,"r":"数据"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-004","t":"auto_number","e":0,"n":null,"r":"PRJ-004"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据","t":"select","e":0,"list":["数据"],"r":"[\"数据\"]"},"文档链接":{"d":"https://example.com/docs/4","t":"text","e":0,"href":"https://example.com/docs/4","r":"[https://example.com/docs/4](https://example.com/docs/4)"},"上线日期":{"d":"2026-07-31","t":"datetime","e":0,"days":-41,"r":"2026-07-31T09:00:00.000+08:00"},"工时":{"d":"640","t":"number","e":0,"n":640,"r":"640"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"220000","t":"number","e":0,"n":220000,"r":"220000"}}},{"id":"PRJ-005","name":"官网 SEO 优化","status":"已完成","tags":["前端"],"progress":1,"budget":90000,"hours":300,"due":"2026-08-20","dueDays":-21,"overdue":false,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"正常","leftDays":null,"tagSummary":"前端","files":[],"link":"https://example.com/docs/5","cells":{"项目名称":{"d":"官网 SEO 优化","t":"text","e":0,"r":"官网 SEO 优化"},"标签汇总":{"d":"前端","t":"formula","e":0,"n":null,"r":"前端"},"成本预警":{"d":"正常","t":"formula","e":0,"n":null,"r":"正常"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-005","t":"auto_number","e":0,"n":null,"r":"PRJ-005"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端","t":"select","e":0,"list":["前端"],"r":"[\"前端\"]"},"文档链接":{"d":"https://example.com/docs/5","t":"text","e":0,"href":"https://example.com/docs/5","r":"[https://example.com/docs/5](https://example.com/docs/5)"},"上线日期":{"d":"2026-08-20","t":"datetime","e":0,"days":-21,"r":"2026-08-20T09:00:00.000+08:00"},"工时":{"d":"300","t":"number","e":0,"n":300,"r":"300"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"90000","t":"number","e":0,"n":90000,"r":"90000"}}},{"id":"PRJ-006","name":"工单系统升级","status":"进行中","tags":["后端"],"progress":0.78,"budget":168000,"hours":520,"due":"2026-10-08","dueDays":28,"overdue":false,"dept":"客户成功部","deptCode":"CS","deptSize":31,"warn":"关注","leftDays":28,"tagSummary":"后端","files":[],"link":"https://example.com/docs/6","cells":{"项目名称":{"d":"工单系统升级","t":"text","e":0,"r":"工单系统升级"},"标签汇总":{"d":"后端","t":"formula","e":0,"n":null,"r":"后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.78","t":"number","e":0,"n":0.78,"r":"0.78"},"部门编码":{"d":"CS","t":"formula","e":0,"n":null,"r":"CS"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-006","t":"auto_number","e":0,"n":null,"r":"PRJ-006"},"剩余天数":{"d":"28","t":"formula","e":0,"n":28,"r":"28"},"部门人数":{"d":"31","t":"lookup","e":0,"n":31,"r":"31"},"标签":{"d":"后端","t":"select","e":0,"list":["后端"],"r":"[\"后端\"]"},"文档链接":{"d":"https://example.com/docs/6","t":"text","e":0,"href":"https://example.com/docs/6","r":"[https://example.com/docs/6](https://example.com/docs/6)"},"上线日期":{"d":"2026-10-08","t":"datetime","e":0,"days":28,"r":"2026-10-08T09:00:00.000+08:00"},"工时":{"d":"520","t":"number","e":0,"n":520,"r":"520"},"所属部门":{"d":"客户成功部","t":"link","e":0,"list":["客户成功部"],"ids":["recvuNpakMh1YC"],"r":"[\"recvuNpakMh1YC\"]"},"预算":{"d":"168000","t":"number","e":0,"n":168000,"r":"168000"}}},{"id":"PRJ-007","name":"财务对账自动化","status":"暂停","tags":["数据","后端"],"progress":0.15,"budget":540000,"hours":1500,"due":"2026-12-20","dueDays":101,"overdue":true,"dept":"财务中心","deptCode":"FIN","deptSize":9,"warn":"超预算","leftDays":101,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/7","cells":{"项目名称":{"d":"财务对账自动化","t":"text","e":0,"r":"财务对账自动化"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.15","t":"number","e":0,"n":0.15,"r":"0.15"},"部门编码":{"d":"FIN","t":"formula","e":0,"n":null,"r":"FIN"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"暂停","t":"select","e":0,"list":["暂停"],"r":"[\"暂停\"]"},"编号":{"d":"PRJ-007","t":"auto_number","e":0,"n":null,"r":"PRJ-007"},"剩余天数":{"d":"101","t":"formula","e":0,"n":101,"r":"101"},"部门人数":{"d":"9","t":"lookup","e":0,"n":9,"r":"9"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/7","t":"text","e":0,"href":"https://example.com/docs/7","r":"[https://example.com/docs/7](https://example.com/docs/7)"},"上线日期":{"d":"2026-12-20","t":"datetime","e":0,"days":101,"r":"2026-12-20T09:00:00.000+08:00"},"工时":{"d":"1500","t":"number","e":0,"n":1500,"r":"1500"},"所属部门":{"d":"财务中心","t":"link","e":0,"list":["财务中心"],"ids":["recvuNpakM0VUN"],"r":"[\"recvuNpakM0VUN\"]"},"预算":{"d":"540000","t":"number","e":0,"n":540000,"r":"540000"}}},{"id":"PRJ-008","name":"增长活动平台","status":"进行中","tags":["前端","紧急"],"progress":0.55,"budget":132000,"hours":410,"due":"2026-09-18","dueDays":8,"overdue":true,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"关注","leftDays":8,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/8","cells":{"项目名称":{"d":"增长活动平台","t":"text","e":0,"r":"增长活动平台"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.55","t":"number","e":0,"n":0.55,"r":"0.55"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-008","t":"auto_number","e":0,"n":null,"r":"PRJ-008"},"剩余天数":{"d":"8","t":"formula","e":0,"n":8,"r":"8"},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/8","t":"text","e":0,"href":"https://example.com/docs/8","r":"[https://example.com/docs/8](https://example.com/docs/8)"},"上线日期":{"d":"2026-09-18","t":"datetime","e":0,"days":8,"r":"2026-09-18T09:00:00.000+08:00"},"工时":{"d":"410","t":"number","e":0,"n":410,"r":"410"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"132000","t":"number","e":0,"n":132000,"r":"132000"}}}],"thresholds":{"overdue":0,"risk":0,"contractRate":100},"freshness":{"freshMinutes":30,"warnMinutes":120,"staleMinutes":360}};
+let VM = {"title":"项目指标看板","subtitle":"飞书多维表集成测试环境","write":{"enabled":true,"endpoint":"http://localhost:3210","allow":["状态","进度","超期"]},"source":{"baseToken":"","baseUrl":"","projectLabel":"项目指标","projectTableId":"","deptLabel":"部门","deptTableId":"","shape":"v3-col","masked":true},"fetchedAt":"2026-09-10T08:52:36.847Z","builtAt":"2026-09-10T08:52:41.585Z","meta":{"degraded":false,"degradeReason":"","offline":false,"buildMs":4737,"pages":1,"rowsPulled":{"project":8,"department":5}},"contract":{"project":{"total":17,"ok":["项目名称","状态","标签","进度","预算","工时","上线日期","超期","文档链接","所属部门","编号","部门编码","部门人数","成本预警","剩余天数","标签汇总","附件"],"missing":[],"rate":100},"department":{"total":4,"ok":["部门名称","部门编码","负责人","在编人数"],"missing":[],"rate":100},"types":{"项目名称":"text","标签汇总":"formula","成本预警":"formula","进度":"number","部门编码":"formula","附件":"attachment","超期":"checkbox","状态":"select","编号":"auto_number","剩余天数":"formula","部门人数":"lookup","标签":"select","文档链接":"text","上线日期":"datetime","工时":"number","所属部门":"link","预算":"number"},"deptTypes":{"部门名称":"text","部门编码":"text","负责人":"user","在编人数":"number"}},"kpi":{"total":8,"budget":3240000,"avgProgress":0.6062500000000001,"overdue":3,"risk":1,"done":2,"headcount":125,"deptCount":5},"statusDist":[{"name":"进行中","count":4,"pct":0.5},{"name":"已完成","count":2,"pct":0.25},{"name":"风险","count":1,"pct":0.125},{"name":"暂停","count":1,"pct":0.125}],"deptDist":[{"name":"产品研发部","code":"RD","size":42,"count":2,"budget":840000},{"name":"数据智能部","code":"DATA","size":18,"count":2,"budget":1470000},{"name":"市场运营部","code":"MKT","size":25,"count":2,"budget":222000},{"name":"客户成功部","code":"CS","size":31,"count":1,"budget":168000},{"name":"财务中心","code":"FIN","size":9,"count":1,"budget":540000}],"rows":[{"rid":"recvuNpxUYomlG","id":"PRJ-001","name":"协作平台重构","status":"进行中","tags":["前端","后端"],"progress":0.65,"budget":480000,"hours":1200,"due":"2026-10-15","dueDays":35,"overdue":false,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":35,"tagSummary":"前端 / 后端","files":[],"link":"https://example.com/docs/1","cells":{"项目名称":{"d":"协作平台重构","t":"text","e":0,"r":"协作平台重构"},"标签汇总":{"d":"前端 / 后端","t":"formula","e":0,"n":null,"r":"前端 / 后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.65","t":"number","e":0,"n":0.65,"r":"0.65"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-001","t":"auto_number","e":0,"n":null,"r":"PRJ-001"},"剩余天数":{"d":"35","t":"formula","e":0,"n":35,"r":"35"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 后端","t":"select","e":0,"list":["前端","后端"],"r":"[\"前端\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/1","t":"text","e":0,"href":"https://example.com/docs/1","r":"[https://example.com/docs/1](https://example.com/docs/1)"},"上线日期":{"d":"2026-10-15","t":"datetime","e":0,"days":35,"r":"2026-10-15T09:00:00.000+08:00"},"工时":{"d":"1200","t":"number","e":0,"n":1200,"r":"1200"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"480000","t":"number","e":0,"n":480000,"r":"480000"}}},{"rid":"recvuNpxUYkZ6S","id":"PRJ-002","name":"数据中台一期","status":"进行中","tags":["数据","后端"],"progress":0.42,"budget":1250000,"hours":3400,"due":"2026-11-30","dueDays":81,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"超预算","leftDays":81,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/2","cells":{"项目名称":{"d":"数据中台一期","t":"text","e":0,"r":"数据中台一期"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.42","t":"number","e":0,"n":0.42,"r":"0.42"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-002","t":"auto_number","e":0,"n":null,"r":"PRJ-002"},"剩余天数":{"d":"81","t":"formula","e":0,"n":81,"r":"81"},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/2","t":"text","e":0,"href":"https://example.com/docs/2","r":"[https://example.com/docs/2](https://example.com/docs/2)"},"上线日期":{"d":"2026-11-30","t":"datetime","e":0,"days":81,"r":"2026-11-30T09:00:00.000+08:00"},"工时":{"d":"3400","t":"number","e":0,"n":3400,"r":"3400"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"1250000","t":"number","e":0,"n":1250000,"r":"1250000"}}},{"rid":"recvuNpxUYuBYd","id":"PRJ-003","name":"移动端改版","status":"风险","tags":["前端","紧急"],"progress":0.3,"budget":360000,"hours":860,"due":"2026-09-25","dueDays":15,"overdue":true,"dept":"产品研发部","deptCode":"RD","deptSize":42,"warn":"关注","leftDays":15,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/3","cells":{"项目名称":{"d":"移动端改版","t":"text","e":0,"r":"移动端改版"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.3","t":"number","e":0,"n":0.3,"r":"0.3"},"部门编码":{"d":"RD","t":"formula","e":0,"n":null,"r":"RD"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"风险","t":"select","e":0,"list":["风险"],"r":"[\"风险\"]"},"编号":{"d":"PRJ-003","t":"auto_number","e":0,"n":null,"r":"PRJ-003"},"剩余天数":{"d":"15","t":"formula","e":0,"n":15,"r":"15"},"部门人数":{"d":"42","t":"lookup","e":0,"n":42,"r":"42"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/3","t":"text","e":0,"href":"https://example.com/docs/3","r":"[https://example.com/docs/3](https://example.com/docs/3)"},"上线日期":{"d":"2026-09-25","t":"datetime","e":0,"days":15,"r":"2026-09-25T09:00:00.000+08:00"},"工时":{"d":"860","t":"number","e":0,"n":860,"r":"860"},"所属部门":{"d":"产品研发部","t":"link","e":0,"list":["产品研发部"],"ids":["recvuNpakMQs8m"],"r":"[\"recvuNpakMQs8m\"]"},"预算":{"d":"360000","t":"number","e":0,"n":360000,"r":"360000"}}},{"rid":"recvuNpxUY91Fv","id":"PRJ-004","name":"客户画像模型","status":"已完成","tags":["数据"],"progress":1,"budget":220000,"hours":640,"due":"2026-07-31","dueDays":-41,"overdue":false,"dept":"数据智能部","deptCode":"DATA","deptSize":18,"warn":"关注","leftDays":null,"tagSummary":"数据","files":[],"link":"https://example.com/docs/4","cells":{"项目名称":{"d":"客户画像模型","t":"text","e":0,"r":"客户画像模型"},"标签汇总":{"d":"数据","t":"formula","e":0,"n":null,"r":"数据"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"DATA","t":"formula","e":0,"n":null,"r":"DATA"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-004","t":"auto_number","e":0,"n":null,"r":"PRJ-004"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"18","t":"lookup","e":0,"n":18,"r":"18"},"标签":{"d":"数据","t":"select","e":0,"list":["数据"],"r":"[\"数据\"]"},"文档链接":{"d":"https://example.com/docs/4","t":"text","e":0,"href":"https://example.com/docs/4","r":"[https://example.com/docs/4](https://example.com/docs/4)"},"上线日期":{"d":"2026-07-31","t":"datetime","e":0,"days":-41,"r":"2026-07-31T09:00:00.000+08:00"},"工时":{"d":"640","t":"number","e":0,"n":640,"r":"640"},"所属部门":{"d":"数据智能部","t":"link","e":0,"list":["数据智能部"],"ids":["recvuNpakMx6p4"],"r":"[\"recvuNpakMx6p4\"]"},"预算":{"d":"220000","t":"number","e":0,"n":220000,"r":"220000"}}},{"rid":"recvuNpxUYtBOz","id":"PRJ-005","name":"官网 SEO 优化","status":"已完成","tags":["前端"],"progress":1,"budget":90000,"hours":300,"due":"2026-08-20","dueDays":-21,"overdue":false,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"正常","leftDays":null,"tagSummary":"前端","files":[],"link":"https://example.com/docs/5","cells":{"项目名称":{"d":"官网 SEO 优化","t":"text","e":0,"r":"官网 SEO 优化"},"标签汇总":{"d":"前端","t":"formula","e":0,"n":null,"r":"前端"},"成本预警":{"d":"正常","t":"formula","e":0,"n":null,"r":"正常"},"进度":{"d":"1","t":"number","e":0,"n":1,"r":"1"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"已完成","t":"select","e":0,"list":["已完成"],"r":"[\"已完成\"]"},"编号":{"d":"PRJ-005","t":"auto_number","e":0,"n":null,"r":"PRJ-005"},"剩余天数":{"d":"","t":"formula","e":1,"n":null,"r":""},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端","t":"select","e":0,"list":["前端"],"r":"[\"前端\"]"},"文档链接":{"d":"https://example.com/docs/5","t":"text","e":0,"href":"https://example.com/docs/5","r":"[https://example.com/docs/5](https://example.com/docs/5)"},"上线日期":{"d":"2026-08-20","t":"datetime","e":0,"days":-21,"r":"2026-08-20T09:00:00.000+08:00"},"工时":{"d":"300","t":"number","e":0,"n":300,"r":"300"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"90000","t":"number","e":0,"n":90000,"r":"90000"}}},{"rid":"recvuNpxUY8vhl","id":"PRJ-006","name":"工单系统升级","status":"进行中","tags":["后端"],"progress":0.78,"budget":168000,"hours":520,"due":"2026-10-08","dueDays":28,"overdue":false,"dept":"客户成功部","deptCode":"CS","deptSize":31,"warn":"关注","leftDays":28,"tagSummary":"后端","files":[],"link":"https://example.com/docs/6","cells":{"项目名称":{"d":"工单系统升级","t":"text","e":0,"r":"工单系统升级"},"标签汇总":{"d":"后端","t":"formula","e":0,"n":null,"r":"后端"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.78","t":"number","e":0,"n":0.78,"r":"0.78"},"部门编码":{"d":"CS","t":"formula","e":0,"n":null,"r":"CS"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"⬜","t":"checkbox","e":0,"b":false,"r":"false"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-006","t":"auto_number","e":0,"n":null,"r":"PRJ-006"},"剩余天数":{"d":"28","t":"formula","e":0,"n":28,"r":"28"},"部门人数":{"d":"31","t":"lookup","e":0,"n":31,"r":"31"},"标签":{"d":"后端","t":"select","e":0,"list":["后端"],"r":"[\"后端\"]"},"文档链接":{"d":"https://example.com/docs/6","t":"text","e":0,"href":"https://example.com/docs/6","r":"[https://example.com/docs/6](https://example.com/docs/6)"},"上线日期":{"d":"2026-10-08","t":"datetime","e":0,"days":28,"r":"2026-10-08T09:00:00.000+08:00"},"工时":{"d":"520","t":"number","e":0,"n":520,"r":"520"},"所属部门":{"d":"客户成功部","t":"link","e":0,"list":["客户成功部"],"ids":["recvuNpakMh1YC"],"r":"[\"recvuNpakMh1YC\"]"},"预算":{"d":"168000","t":"number","e":0,"n":168000,"r":"168000"}}},{"rid":"recvuNpxUY1rVq","id":"PRJ-007","name":"财务对账自动化","status":"暂停","tags":["数据","后端"],"progress":0.15,"budget":540000,"hours":1500,"due":"2026-12-20","dueDays":101,"overdue":true,"dept":"财务中心","deptCode":"FIN","deptSize":9,"warn":"超预算","leftDays":101,"tagSummary":"数据 / 后端","files":[],"link":"https://example.com/docs/7","cells":{"项目名称":{"d":"财务对账自动化","t":"text","e":0,"r":"财务对账自动化"},"标签汇总":{"d":"数据 / 后端","t":"formula","e":0,"n":null,"r":"数据 / 后端"},"成本预警":{"d":"超预算","t":"formula","e":0,"n":null,"r":"超预算"},"进度":{"d":"0.15","t":"number","e":0,"n":0.15,"r":"0.15"},"部门编码":{"d":"FIN","t":"formula","e":0,"n":null,"r":"FIN"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"暂停","t":"select","e":0,"list":["暂停"],"r":"[\"暂停\"]"},"编号":{"d":"PRJ-007","t":"auto_number","e":0,"n":null,"r":"PRJ-007"},"剩余天数":{"d":"101","t":"formula","e":0,"n":101,"r":"101"},"部门人数":{"d":"9","t":"lookup","e":0,"n":9,"r":"9"},"标签":{"d":"数据 / 后端","t":"select","e":0,"list":["数据","后端"],"r":"[\"数据\",\"后端\"]"},"文档链接":{"d":"https://example.com/docs/7","t":"text","e":0,"href":"https://example.com/docs/7","r":"[https://example.com/docs/7](https://example.com/docs/7)"},"上线日期":{"d":"2026-12-20","t":"datetime","e":0,"days":101,"r":"2026-12-20T09:00:00.000+08:00"},"工时":{"d":"1500","t":"number","e":0,"n":1500,"r":"1500"},"所属部门":{"d":"财务中心","t":"link","e":0,"list":["财务中心"],"ids":["recvuNpakM0VUN"],"r":"[\"recvuNpakM0VUN\"]"},"预算":{"d":"540000","t":"number","e":0,"n":540000,"r":"540000"}}},{"rid":"recvuNpxUYWlV1","id":"PRJ-008","name":"增长活动平台","status":"进行中","tags":["前端","紧急"],"progress":0.55,"budget":132000,"hours":410,"due":"2026-09-18","dueDays":8,"overdue":true,"dept":"市场运营部","deptCode":"MKT","deptSize":25,"warn":"关注","leftDays":8,"tagSummary":"前端 / 紧急","files":[],"link":"https://example.com/docs/8","cells":{"项目名称":{"d":"增长活动平台","t":"text","e":0,"r":"增长活动平台"},"标签汇总":{"d":"前端 / 紧急","t":"formula","e":0,"n":null,"r":"前端 / 紧急"},"成本预警":{"d":"关注","t":"formula","e":0,"n":null,"r":"关注"},"进度":{"d":"0.55","t":"number","e":0,"n":0.55,"r":"0.55"},"部门编码":{"d":"MKT","t":"formula","e":0,"n":null,"r":"MKT"},"附件":{"d":"","t":"attachment","e":1,"list":[],"r":""},"超期":{"d":"✅","t":"checkbox","e":0,"b":true,"r":"true"},"状态":{"d":"进行中","t":"select","e":0,"list":["进行中"],"r":"[\"进行中\"]"},"编号":{"d":"PRJ-008","t":"auto_number","e":0,"n":null,"r":"PRJ-008"},"剩余天数":{"d":"8","t":"formula","e":0,"n":8,"r":"8"},"部门人数":{"d":"25","t":"lookup","e":0,"n":25,"r":"25"},"标签":{"d":"前端 / 紧急","t":"select","e":0,"list":["前端","紧急"],"r":"[\"前端\",\"紧急\"]"},"文档链接":{"d":"https://example.com/docs/8","t":"text","e":0,"href":"https://example.com/docs/8","r":"[https://example.com/docs/8](https://example.com/docs/8)"},"上线日期":{"d":"2026-09-18","t":"datetime","e":0,"days":8,"r":"2026-09-18T09:00:00.000+08:00"},"工时":{"d":"410","t":"number","e":0,"n":410,"r":"410"},"所属部门":{"d":"市场运营部","t":"link","e":0,"list":["市场运营部"],"ids":["recvuNpakMq2mY"],"r":"[\"recvuNpakMq2mY\"]"},"预算":{"d":"132000","t":"number","e":0,"n":132000,"r":"132000"}}}],"thresholds":{"overdue":0,"risk":0,"contractRate":100},"freshness":{"freshMinutes":30,"warnMinutes":120,"staleMinutes":360}};   // 写回成功后，会用服务端回读的最新视图模型整体替换
 const $ = (s) => document.querySelector(s);
 const tip = $('#tip');
 
@@ -321,6 +343,12 @@ function renderStrip() {
     ['分页拉取', VM.meta.pages + ' 页 / ' + VM.meta.rowsPulled.project + ' 条', 'ok-c',
       '<div class="note">base v3 单页上限 200 条，超过必须用 offset 翻页。<br>本次共翻 ' + VM.meta.pages + ' 页，拿到 ' + VM.meta.rowsPulled.project + ' 条项目记录。</div>'],
     ['构建耗时', VM.meta.buildMs + 'ms', 'ok-c', null],
+    ['写回通道',
+      !RELAY.checked ? '探测中…' : (RELAY.online ? '中转在线 · 可写' : '只读'),
+      RELAY.online ? 'ok-c' : 'info-c',
+      RELAY.online
+        ? '<div class="note">本地写回中转服务在线：' + esc((VM.write || {}).endpoint || '') + '<br>可写字段：' + esc((RELAY.allow || []).join('、')) + '<br>双击表格里对应的单元格 → 就地修改 → 回车提交。<br>凭证只存在于中转层，页面源码里没有任何密钥。</div>'
+        : '<div class="note">未检测到本地写回中转服务，当前为<b>只读</b>模式。<br>启动方式：在项目目录执行 <code>node server.js</code>，然后刷新页面。<br>这是刻意的安全默认值 —— 拿到公开链接的人只能看，改不了数据。</div>'],
   ];
 
   $('#t-strip').innerHTML = segs.map((s, i) =>
@@ -405,6 +433,141 @@ function renderDist() {
   });
 }
 
+/* =========================================================================
+   写回：页面 →（本地中转服务）→ 多维表
+   -------------------------------------------------------------------------
+   页面自身不持任何凭证，只认得一个提交地址。中转层探测不到时，页面自动
+   变成纯只读 —— 这也是公开页面对陌生访客的安全默认值：拿到链接只能看。
+   ========================================================================= */
+const RELAY = { online: false, checked: false, allow: [], rules: {} };
+const EDITABLE_FIELDS = ['状态', '进度', '超期'];
+
+async function probeRelay() {
+  const W = VM.write || {};
+  if (!W.enabled || !W.endpoint) { RELAY.checked = true; return; }
+  try {
+    const r = await fetch(W.endpoint + '/api/health', { cache: 'no-store' });
+    const j = await r.json();
+    RELAY.online = !!(j && j.ok);
+    RELAY.allow = (j && j.allow) || W.allow || [];
+    RELAY.rules = (j && j.rules) || {};
+  } catch (e) {
+    RELAY.online = false; // 连不上就是只读，不猜、不降级
+  }
+  RELAY.checked = true;
+  renderStrip();
+  renderTable();
+}
+
+function canEdit(field) {
+  return RELAY.online && EDITABLE_FIELDS.indexOf(field) >= 0 && RELAY.allow.indexOf(field) >= 0;
+}
+
+function toast(msg, kind) {
+  let el = document.getElementById('toast');
+  if (!el) { el = document.createElement('div'); el.id = 'toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.className = 'on ' + (kind || '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 4200);
+}
+
+/** 双击单元格 → 就地变控件。查看依旧是悬停，不破坏原有手感。 */
+function beginEdit(td) {
+  if (td.dataset.editing || !canEdit(td.dataset.f)) return;
+  const ri = +td.dataset.ri, field = td.dataset.f;
+  const cell = VM.rows[ri].cells[field] || {};
+  const prev = field === '进度' ? (typeof cell.n === 'number' ? cell.n : 0)
+             : field === '超期' ? !!cell.b
+             : (cell.d || '');
+
+  td.dataset.editing = '1';
+  td.dataset.prev = String(prev);
+  td.onmouseenter = null; td.onmouseleave = null;  // 编辑时不弹对照提示
+  hideTip();
+
+  let ctrl;
+  if (field === '状态') {
+    ctrl = document.createElement('select');
+    ['进行中', '已完成', '风险', '暂停'].forEach((o) => {
+      const op = document.createElement('option');
+      op.value = o; op.textContent = o; if (o === prev) op.selected = true;
+      ctrl.appendChild(op);
+    });
+  } else if (field === '进度') {
+    ctrl = document.createElement('input');
+    ctrl.type = 'number'; ctrl.min = '0'; ctrl.max = '100'; ctrl.step = '1';
+    ctrl.value = String(Math.round(prev * 100));
+  } else {
+    ctrl = document.createElement('select');
+    [['false', '⬜ 未超期'], ['true', '✅ 已超期']].forEach((pair) => {
+      const op = document.createElement('option');
+      op.value = pair[0]; op.textContent = pair[1];
+      if (String(!!cell.b) === pair[0]) op.selected = true;
+      ctrl.appendChild(op);
+    });
+  }
+
+  const readValue = () => (field === '状态' ? ctrl.value
+                          : field === '进度' ? Number(ctrl.value) / 100
+                          : ctrl.value === 'true');
+  const finish = (commit) => {
+    delete td.dataset.editing;
+    if (commit) submitEdit(td, field, readValue(), prev);
+    else renderTable();
+  };
+
+  ctrl.onkeydown = (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  };
+  if (field !== '进度') ctrl.onchange = () => finish(true);
+  ctrl.onblur = () => { if (td.dataset.editing) finish(false); };
+
+  td.innerHTML = '';
+  td.appendChild(ctrl);
+  ctrl.focus();
+  if (ctrl.select) ctrl.select();
+}
+
+/** 提交。只有服务端确认写入并回读成功，界面才更新；任何失败都明确报错。 */
+async function submitEdit(td, field, value, prev) {
+  const r = VM.rows[+td.dataset.ri];
+  if (!r || !r.rid) { toast('❌ 这条记录没有 recordId，无法定位，写回中止', 'bad'); renderTable(); return; }
+  td.classList.add('saving');
+
+  try {
+    const res = await fetch(VM.write.endpoint + '/api/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId: r.rid, field: field, value: value, prev: prev, actor: 'dashboard' }),
+    });
+    const j = await res.json();
+
+    if (res.ok && j.ok) {
+      // 服务端返回的是「接口里的真实值」，不是我们提交的值 —— 以它为准
+      VM = j.vm;
+      renderAll();
+      const el = document.querySelector('#t-table .cell[data-ri="' + td.dataset.ri + '"][data-f="' + field + '"]');
+      if (el) { el.classList.add('saved'); setTimeout(() => el.classList.remove('saved'), 1000); }
+      const shown = field === '进度' ? Math.round(Number(j.saved) * 100) + '%'
+                  : field === '超期' ? (j.saved ? '已超期' : '未超期')
+                  : j.saved;
+      toast('✅ 已写回多维表：' + field + ' → ' + shown, 'ok');
+    } else if (j.conflict) {
+      toast('⚠ ' + j.error, 'bad');
+      renderTable();
+    } else {
+      toast('❌ ' + (j.error || '写入失败'), 'bad');
+      renderTable();
+    }
+  } catch (e) {
+    // 连不上中转层：明确失败，绝不显示成功态
+    toast('❌ 连不上写回服务（' + VM.write.endpoint + '）：' + e.message, 'bad');
+    renderTable();
+  }
+}
+
 /* ---------------- 明细表 ---------------- */
 const stCls = { '已完成': 's-done', '风险': 's-risk', '进行中': 's-doing', '暂停': 's-pause' };
 function renderTable() {
@@ -421,7 +584,8 @@ function renderTable() {
       const raw = cell ? cell.r : '（字段缺失）';
       const parsed = cell ? cell.d : '—';
       const note = cell && cell.w ? '该字段被 { type, value } 包装过，适配层已按内层类型解出真实值。' : '';
-      return '<td class="cell ' + (cls || '') + '" data-ri="' + ri + '" data-f="' + esc(name) + '" data-t="' + esc(t) + '" data-raw="' + esc(raw) + '" data-p="' + esc(parsed) + '" data-note="' + esc(note) + '">' + content + '</td>';
+      const ed = canEdit(name) ? ' editable' : '';
+      return '<td class="cell ' + (cls || '') + ed + '" data-ri="' + ri + '" data-f="' + esc(name) + '" data-t="' + esc(t) + '" data-raw="' + esc(raw) + '" data-p="' + esc(parsed) + '" data-note="' + esc(note) + '">' + content + '</td>';
     };
     return '<tr>' +
       td('编号', '<span class="mono">' + esc(r.id || '—') + '</span>') +
@@ -444,6 +608,11 @@ function renderTable() {
     el.onmouseenter = (e) => showTip(
       tipHTML(el.dataset.f, el.dataset.t, el.dataset.raw, el.dataset.p, el.dataset.note), e);
     el.onmouseleave = hideTip;
+  });
+
+  // 写回入口：只在「中转层在线 + 字段在白名单」时才挂双击
+  document.querySelectorAll('#t-table .cell.editable').forEach((el) => {
+    el.ondblclick = () => beginEdit(el);
   });
 }
 
@@ -489,10 +658,15 @@ function renderFoot() {
 }
 
 /* ---------------- 启动 ---------------- */
+function renderAll() {
+  renderTop(); renderStrip(); renderKPI(); renderDist(); renderTable(); renderFields(); renderFoot();
+}
+
 if (!VM) {
   document.body.innerHTML = '<div class="wrap"><div class="card"><div class="empty">数据未注入：请用 fetch-and-build.js 生成页面，而不是直接打开模板。</div></div></div>';
 } else {
-  renderTop(); renderStrip(); renderKPI(); renderDist(); renderTable(); renderFields(); renderFoot();
+  renderAll();
+  probeRelay(); // 探测写回中转层：在线才开放编辑，否则保持只读
 }
 </script>
 </body>

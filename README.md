@@ -6,7 +6,7 @@
 - `data.json`：构建时的数据快照，供对照
 - 已脱敏：不含 base token、表 ID、租户地址
 
-## 验证要点（页面内悬停即看，无需点击）
+## 验证要点（悬停即看，无需点击）
 
 | 项 | 验证方式 |
 | --- | --- |
@@ -15,11 +15,28 @@
 | 数据契约 | 改 Base 字段名后重新构建 → 契约面板报警，缺失槽位显示 `—` |
 | 失败降级 | 断网构建 → 保留上次快照并标记「降级快照」，不假报成功 |
 
+## 写回（双向读写）
+
+本页面**不持有任何凭证**。只有当本机运行着写回中转服务时，页面才会开放编辑；
+否则自动保持只读 —— 这是公开页面给陌生访客的安全默认值。
+
+```bash
+cd feishu-dashboard-test
+node server.js          # 启动写回中转服务（仅绑 127.0.0.1，默认 :3210）
+```
+
+启动后刷新页面：状态条出现「中转在线 · 可写」，明细表的
+**状态 / 进度 / 超期** 三列可双击编辑（Enter 提交，Esc 取消）。
+其余字段不开放写回 —— 误改成本高。
+
+写入路径：页面 → `POST /api/update` → 中转服务 → 飞书 `PATCH records/{id}`。
+安全约束：只绑本机 / Origin 校验 / 字段白名单 / 边界校验 / 乐观锁（旧值比对，冲突返回 409）。
+
 ## 本地重建
 
 ```bash
 node fetch-and-build.js              # 拉取 + 重建
 node fetch-and-build.js --offline    # 只改样式，不联网
-node fetch-and-build.js --publish     # 额外产出脱敏版到 out/publish/
+node fetch-and-build.js --publish    # 额外产出脱敏版到 out/publish/
 node test/field-adapter.test.js      # 字段解析单测
 ```
